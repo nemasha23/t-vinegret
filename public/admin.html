@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Т-Винегрет · Ведущая</title>
+<style>
+  :root { --accent: #FFDD2D; --ink: #1a1a1a; --muted: #6b6b6b; --bg: #f3f3ef; --card: #fff; --line: #e2e2dc; --ok: #1f8a4c; --err: #c4352b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: var(--accent); padding: 12px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  header b { font-size: 18px; }
+  header .stat { font-size: 14px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+  @media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--card); border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 0 0 10px; }
+  h3 { margin: 14px 0 6px; font-size: 14px; }
+  .now-block { font-size: 15px; color: var(--muted); }
+  .now-label { font-size: 30px; font-weight: 800; margin: 2px 0 8px; }
+  .accept { font-size: 14px; color: var(--muted); }
+  .accept b { color: var(--ink); }
+  .counter { font-size: 22px; font-weight: 700; margin-top: 10px; }
+  .nav { display: flex; gap: 10px; margin-top: 16px; }
+  button { font: inherit; padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; }
+  button:hover { border-color: #bbb; }
+  button.primary { background: var(--accent); border-color: var(--accent); font-weight: 800; font-size: 20px; padding: 16px 22px; flex: 1; }
+  button.back { font-size: 16px; }
+  button.danger { color: var(--err); }
+  .next-hint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  select { font: inherit; padding: 8px; border-radius: 10px; border: 1.5px solid var(--line); max-width: 100%; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  td.n { text-align: right; width: 48px; font-variant-numeric: tabular-nums; }
+  tr.ok td.ans { color: var(--ok); }
+  tr.bad td.ans { color: var(--ink); }
+  .mark { font-size: 12px; padding: 3px 8px; }
+  .tag { font-size: 11px; color: var(--muted); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .banner { background: #fde3e1; color: var(--err); padding: 12px 16px; border-radius: 12px; grid-column: 1 / -1; font-weight: 600; }
+  .banner button { margin-left: 10px; }
+  .small { font-size: 12px; color: var(--muted); }
+  #login { max-width: 360px; margin: 80px auto; }
+  #login input { width: 100%; font: inherit; font-size: 17px; padding: 12px; border-radius: 10px; border: 1.5px solid var(--line); margin: 10px 0; }
+  .hidden { display: none !important; }
+  .scroll { max-height: 420px; overflow: auto; }
+  .toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .toggle input { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+
+<div id="login" class="card hidden">
+  <h2>Вход для ведущей</h2>
+  <form id="login-form">
+    <input id="pwd" type="password" placeholder="Пароль" autocomplete="current-password">
+    <button class="primary" style="width:100%">Войти</button>
+    <div class="small" id="login-err" style="color:var(--err)"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <b>Т-Винегрет · Ведущая</b>
+    <span class="stat">Зарегистрировано: <b id="s-players">0</b></span>
+    <span class="stat">На связи сейчас: <b id="s-online">0</b></span>
+    <span class="stat" id="s-conn"></span>
+  </header>
+  <main>
+    <div id="banner" class="banner hidden"></div>
+
+    <div style="display:grid;gap:16px;align-content:start">
+      <section class="card">
+        <h2>Сейчас на экранах</h2>
+        <div class="now-block" id="now-block"></div>
+        <div class="now-label" id="now-label"></div>
+        <div class="accept" id="now-accept"></div>
+        <div class="counter" id="now-count"></div>
+        <div class="nav">
+          <button class="back" id="btn-prev">← Назад</button>
+          <button class="primary" id="btn-next">Дальше →</button>
+        </div>
+        <div class="next-hint" id="next-hint"></div>
+        <div class="row" style="margin-top:14px">
+          <span class="small">Перейти к шагу:</span>
+          <select id="jump"></select>
+        </div>
+      </section>
+
+      <section class="card" id="dist-card">
+        <h2>Ответы на текущий вопрос</h2>
+        <p class="small">Зелёные засчитаны. Если автопроверка ошиблась, нажми кнопку в строке: засчитается или снимется у всех, кто так ответил.</p>
+        <div class="scroll"><table id="dist"></table></div>
+      </section>
+    </div>
+
+    <div style="display:grid;gap:16px;align-content:start">
+      <section class="card">
+        <h2>Рейтинг (видишь только ты)</h2>
+        <table id="top"></table>
+        <div id="block-top"></div>
+      </section>
+
+      <section class="card">
+        <h2>Настройки и данные</h2>
+        <label class="toggle"><input type="checkbox" id="allow-late"> Пускать опоздавших после старта</label>
+        <div class="row" style="margin-top:12px">
+          <button id="btn-csv">Скачать результаты (Excel)</button>
+          <button id="btn-backup">Скачать резервную копию</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button id="btn-restore">Восстановить из файла…</button>
+          <input type="file" id="restore-file" accept=".json,application/json" class="hidden">
+          <button id="btn-restore-local">Восстановить из копии в браузере</button>
+        </div>
+        <p class="small" id="local-info"></p>
+        <div class="row" style="margin-top:8px">
+          <button class="danger" id="btn-reset">Стереть всё и начать заново</button>
+        </div>
+        <h3>Кружки</h3>
+        <table id="clubs"></table>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var key = null;
+  try { key = localStorage.getItem('tv_admin_key'); } catch (e) {}
+  var S = null;           // последнее состояние с сервера
+  var busy = false;
+  var lastBackupAt = 0;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function api(method, action, body) {
+    return fetch('/api/admin/' + action, {
+      method: method, cache: 'no-store',
+      headers: Object.assign({ 'x-admin-key': key || '' }, body ? { 'Content-Type': 'application/json' } : {}),
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(function (r) {
+      if (r.status === 401) { showLogin('Неверный пароль'); throw new Error('auth'); }
+      return r.json().then(function (d) { if (!r.ok) throw new Error(d.error || 'Ошибка'); return d; });
+    });
+  }
+
+  function showLogin(err) {
+    $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+    $('login-err').textContent = err || '';
+  }
+
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    key = $('pwd').value;
+    try { localStorage.setItem('tv_admin_key', key); } catch (e2) {}
+    $('login').classList.add('hidden');
+    load();
+  });
+
+  function stepTitle(s) { return (s.blockTitle ? s.blockTitle + ' · ' : '') + s.label; }
+
+  function render(d) {
+    S = d;
+    $('app').classList.remove('hidden');
+    $('s-players').textContent = d.players;
+    $('s-online').textContent = d.online;
+    $('s-conn').textContent = '';
+
+    var st = d.step;
+    $('now-block').textContent = st.blockTitle || '';
+    $('now-label').textContent = st.label;
+    $('now-accept').innerHTML = st.accept
+      ? 'Верный ответ: <b>' + esc(st.accept.join(' / ')) + '</b>' + (st.points ? ' · ' + st.points + ' очк.' : ' · демо, без очков')
+      : '';
+    $('now-count').textContent = st.qid ? 'Ответили: ' + d.answered + ' из ' + d.players : '';
+    var next = d.steps[d.stepIndex + 1];
+    $('next-hint').textContent = next ? 'Дальше будет: ' + stepTitle(next) : 'Это последний шаг';
+    $('btn-next').disabled = !next;
+    $('btn-prev').disabled = d.stepIndex === 0;
+
+    var jump = $('jump');
+    if (jump.options.length !== d.steps.length) {
+      jump.innerHTML = d.steps.map(function (s) { return '<option value="' + s.i + '">' + (s.i) + '. ' + esc(stepTitle(s)) + '</option>'; }).join('');
+    }
+    jump.value = String(d.stepIndex);
+
+    $('dist-card').classList.toggle('hidden', !st.qid);
+    if (st.qid) {
+      $('dist').innerHTML = '<tr><th>Ответ</th><th class="n">Сколько</th><th></th></tr>' + (d.distribution.length ? d.distribution.map(function (g, i) {
+        return '<tr class="' + (g.ok ? 'ok' : 'bad') + '"><td class="ans">' + (g.ok ? '✓ ' : '✗ ') + esc(g.sample) +
+          (g.manual ? ' <span class="tag">(вручную)</span>' : '') + '</td><td class="n">' + g.n + '</td><td style="width:1%;white-space:nowrap">' +
+          '<button class="mark" data-i="' + i + '">' + (g.ok ? 'Не засчитывать' : 'Засчитать') + '</button>' +
+          (g.manual ? ' <button class="mark" data-i="' + i + '" data-clear="1">Как было</button>' : '') + '</td></tr>';
+      }).join('') : '<tr><td colspan="3" class="small">Пока никто не ответил</td></tr>');
+    }
+
+    var row = function (r) {
+      return '<tr><td class="n">' + r.place + '</td><td>' + esc(r.name) + ' <span class="tag">' + esc(r.tg) + '</span><br><span class="tag">' + esc(r.club) + '</span></td><td class="n"><b>' + r.score + '</b></td></tr>';
+    };
+    $('top').innerHTML = '<tr><th class="n">Место</th><th>Участник</th><th class="n">Очки</th></tr>' +
+      (d.top.length ? d.top.map(row).join('') : '<tr><td colspan="3" class="small">Пока пусто</td></tr>');
+    $('block-top').innerHTML = d.blockTop.filter(function (b) { return b.rows.length; }).map(function (b) {
+      return '<h3>' + esc(b.title) + '</h3><table>' + b.rows.map(row).join('') + '</table>';
+    }).join('');
+
+    $('allow-late').checked = d.allowLate;
+    $('clubs').innerHTML = d.clubs.map(function (c) { return '<tr><td>' + esc(c.club) + '</td><td class="n">' + c.n + '</td></tr>'; }).join('');
+
+    checkRestart(d);
+  }
+
+  // ---------- Копия в браузере и обнаружение перезапуска ----------
+
+  function localBackup() { try { return JSON.parse(localStorage.getItem('tv_backup') || 'null'); } catch (e) { return null; } }
+
+  function updateLocalInfo() {
+    var b = localBackup();
+    $('local-info').textContent = b
+      ? 'Копия в этом браузере: ' + new Date(b.backupAt).toLocaleTimeString('ru-RU') + ', участников: ' + Object.keys(b.players || {}).length + '. Обновляется сама каждые 20 секунд.'
+      : 'Копии в этом браузере пока нет.';
+  }
+
+  function takeBackup() {
+    if (!S || !S.players) return;
+    api('GET', 'backup.json').then(function (b) {
+      try { localStorage.setItem('tv_backup', JSON.stringify(b)); lastBackupAt = Date.now(); }
+      catch (e) { $('local-info').textContent = 'Не хватает места в браузере для копии. Скачивай резервную копию кнопкой.'; return; }
+      updateLocalInfo();
+    }).catch(function () {});
+  }
+
+  function checkRestart(d) {
+    var b = localBackup();
+    var lost = b && b.bootId !== d.bootId &&
+      ((b.stepIndex > 0 && d.stepIndex === 0) || Object.keys(b.players || {}).length > d.players);
+    var banner = $('banner');
+    if (lost) {
+      banner.innerHTML = 'Похоже, сервер перезапустился и потерял данные. В копии в браузере: участников ' + Object.keys(b.players).length +
+        ', шаг ' + b.stepIndex + '. <button id="banner-restore">Восстановить из копии в браузере</button>';
+      banner.classList.remove('hidden');
+      $('banner-restore').onclick = restoreLocal;
+    } else banner.classList.add('hidden');
+  }
+
+  function restore(data) {
+    return api('POST', 'restore', data).then(function (d) { render(d); alert('Восстановлено: ' + d.players + ' участников.'); takeBackup(); })
+      .catch(function (e) { if (e.message !== 'auth') alert('Не удалось восстановить: ' + e.message); });
+  }
+  function restoreLocal() {
+    var b = localBackup();
+    if (!b) return alert('В этом браузере нет копии');
+    if (confirm('Восстановить данные из копии от ' + new Date(b.backupAt).toLocaleTimeString('ru-RU') + '?')) restore(b);
+  }
+
+  // ---------- Действия ----------
+
+  function act(action, body) {
+    if (busy) return;
+    busy = true;
+    return api('POST', action, body).then(render).catch(function (e) { if (e.message !== 'auth') alert(e.message); })
+      .then(function () { busy = false; });
+  }
+
+  $('btn-next').onclick = function () { if (S) act('go', { index: S.stepIndex + 1 }); };
+  $('btn-prev').onclick = function () { if (S) act('go', { index: S.stepIndex - 1 }); };
+  $('jump').onchange = function () {
+    var i = Number(this.value);
+    if (confirm('Переключить всех участников на шаг «' + stepTitle(S.steps[i]) + '»?')) act('go', { index: i });
+    else this.value = String(S.stepIndex);
+  };
+  $('allow-late').onchange = function () { act('allowLate', { value: this.checked }); };
+  $('dist').onclick = function (e) {
+    var b = e.target.closest('button[data-i]');
+    if (!b || !S) return;
+    var g = S.distribution[Number(b.dataset.i)];
+    act('manual', { qid: S.step.qid, norm: g.norm, value: b.dataset.clear ? null : !g.ok });
+  };
+
+  function download(action, filename) {
+    fetch('/api/admin/' + action, { headers: { 'x-admin-key': key } }).then(function (r) {
+      if (!r.ok) throw new Error('Ошибка ' + r.status);
+      return r.blob();
+    }).then(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    }).catch(function (e) { alert(e.message); });
+  }
+  function stamp() { var d = new Date(); return d.toISOString().slice(0, 10) + '_' + d.toTimeString().slice(0, 5).replace(':', '-'); }
+  $('btn-csv').onclick = function () { download('export.csv', 't-vinegret_results_' + stamp() + '.csv'); };
+  $('btn-backup').onclick = function () { download('backup.json', 't-vinegret_backup_' + stamp() + '.json'); };
+  $('btn-restore').onclick = function () { $('restore-file').click(); };
+  $('restore-file').onchange = function () {
+    var f = this.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try { var data = JSON.parse(reader.result); } catch (e) { return alert('Файл не читается'); }
+      if (confirm('Восстановить данные из файла ' + f.name + '?')) restore(data);
+    };
+    reader.readAsText(f);
+    this.value = '';
+  };
+  $('btn-restore-local').onclick = restoreLocal;
+  $('btn-reset').onclick = function () {
+    var w = prompt('Это сотрёт всех участников и ответы. Чтобы подтвердить, напиши СБРОС');
+    if (w === null) return;
+    if (w.trim().toUpperCase() !== 'СБРОС') return alert('Ничего не стёрто');
+    act('reset', { confirm: 'СБРОС' }).then(function () { try { localStorage.removeItem('tv_backup'); } catch (e) {} updateLocalInfo(); });
+  };
+
+  function load() {
+    return api('GET', 'state').then(render).catch(function (e) {
+      if (e.message !== 'auth') $('s-conn').textContent = '⚠ Нет связи с сервером';
+    });
+  }
+
+  if (!key) showLogin(); else load();
+  updateLocalInfo();
+  setInterval(function () { if (key && !busy && !$('app').classList.contains('hidden')) load(); }, 2000);
+  setInterval(function () { if (S && $('banner').classList.contains('hidden')) takeBackup(); }, 20000);
+})();
+</script>
+</body>
+</html>

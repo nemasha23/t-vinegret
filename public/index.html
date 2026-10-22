@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFDD2D">
+<title>Т-Винегрет</title>
+<style>
+  :root {
+    --accent: #FFDD2D; --ink: #1a1a1a; --muted: #6b6b6b; --bg: #f6f6f3; --card: #ffffff;
+    --line: #e2e2dc; --ok: #1f8a4c; --err: #c4352b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font: 17px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg); color: var(--ink); min-height: 100vh;
+  }
+  header { background: var(--accent); padding: 14px 16px; font-weight: 800; font-size: 20px; letter-spacing: .2px; }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 16px 40px; }
+  .card { background: var(--card); border-radius: 16px; padding: 20px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  h2 { font-size: 15px; font-weight: 600; color: var(--muted); margin: 0 0 4px; text-transform: none; }
+  p { margin: 8px 0; }
+  .muted { color: var(--muted); }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 14px 0 6px; }
+  input, select {
+    width: 100%; font: inherit; font-size: 18px; padding: 13px 14px; border: 1.5px solid var(--line);
+    border-radius: 12px; background: #fff; color: var(--ink); -webkit-appearance: none; appearance: none;
+  }
+  select { background-image: linear-gradient(45deg, transparent 50%, #888 50%), linear-gradient(135deg, #888 50%, transparent 50%);
+    background-position: calc(100% - 20px) 50%, calc(100% - 14px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 36px; }
+  input:focus, select:focus { outline: none; border-color: var(--ink); }
+  button {
+    width: 100%; margin-top: 18px; font: inherit; font-weight: 700; font-size: 18px; padding: 15px;
+    border: 0; border-radius: 12px; background: var(--accent); color: var(--ink); cursor: pointer;
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; }
+  .error { color: var(--err); font-size: 15px; margin-top: 10px; min-height: 1em; }
+  .sent { margin-top: 14px; padding: 12px 14px; background: #eef8f1; border-radius: 12px; color: var(--ok); font-size: 16px; word-break: break-word; }
+  .big { font-size: 44px; text-align: center; margin: 6px 0 2px; }
+  .center { text-align: center; }
+  .qhead { font-size: 26px; font-weight: 800; margin: 2px 0 14px; }
+  .status { position: fixed; left: 0; right: 0; bottom: 0; text-align: center; font-size: 13px; padding: 6px; background: #fff4c2; display: none; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>Т-Винегрет</header>
+<main>
+
+  <section id="screen-loading" class="card center"><p class="muted">Загружаем…</p></section>
+
+  <section id="screen-register" class="card hidden">
+    <h1>Привет!</h1>
+    <p class="muted">Зарегистрируйся, чтобы играть.</p>
+    <form id="reg-form" autocomplete="on" novalidate>
+      <label for="first">Имя</label>
+      <input id="first" name="given-name" autocomplete="given-name" maxlength="60" required>
+      <label for="last">Фамилия</label>
+      <input id="last" name="family-name" autocomplete="family-name" maxlength="60" required>
+      <label for="tg">Ник в Телеграме</label>
+      <input id="tg" placeholder="@nick" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="60" required>
+      <label for="club">Твой кружок</label>
+      <select id="club" required>
+        <option value="" disabled selected>Выбери</option>
+      </select>
+      <button type="submit" id="reg-btn">Играть</button>
+      <div class="error" id="reg-error"></div>
+    </form>
+  </section>
+
+  <section id="screen-late" class="card center hidden">
+    <div class="big">🎧</div>
+    <p id="late-text"></p>
+  </section>
+
+  <section id="screen-wait" class="card center hidden">
+    <div class="big">⏳</div>
+    <h1 id="wait-title"></h1>
+    <p class="muted" id="wait-text"></p>
+  </section>
+
+  <section id="screen-question" class="card hidden">
+    <h2 id="q-block"></h2>
+    <div class="qhead" id="q-label"></div>
+    <form id="ans-form" autocomplete="off" novalidate>
+      <input id="answer" placeholder="Твой ответ" maxlength="200" autocapitalize="off" autocomplete="off" enterkeyhint="send">
+      <button type="submit" id="ans-btn">Отправить</button>
+      <div class="error" id="ans-error"></div>
+    </form>
+    <div class="sent hidden" id="ans-sent"></div>
+    <p class="muted" style="font-size:14px;margin-top:14px">Можно поменять ответ, пока ведущая не перешла к следующему вопросу. Засчитывается последний.</p>
+  </section>
+
+  <section id="screen-end" class="card center hidden">
+    <div class="big">🎉</div>
+    <h1>Игра окончена!</h1>
+    <p class="muted">Спасибо, что играл(а) с нами. Итоги объявит ведущая.</p>
+  </section>
+
+</main>
+<div class="status" id="status">Нет связи, переподключаемся…</div>
+
+<script>
+(function () {
+  var CLUBS = ['Олимпиадная математика', 'Олимпиадная геометрия', 'Алгоритмы и структуры данных',
+    'Информационная безопасность', 'Искусственный интеллект', 'Не учусь в кружке Т-Поколение'];
+
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem('tv_' + k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem('tv_' + k, JSON.stringify(v)); } catch (e) {} },
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pid = store.get('pid');
+  var profile = store.get('profile'); // для автоматической перерегистрации после перезапуска сервера
+  var current = null;   // текущий шаг
+  var registered = false;
+  var lateBlocked = false;
+  var lastSeen = 0;
+  var resent = null;
+
+  CLUBS.forEach(function (c) {
+    var o = document.createElement('option'); o.value = c; o.textContent = c; $('club').appendChild(o);
+  });
+
+  function show(id) {
+    ['loading', 'register', 'late', 'wait', 'question', 'end'].forEach(function (s) {
+      $('screen-' + s).classList.toggle('hidden', s !== id);
+    });
+  }
+
+  function api(method, url, body) {
+    return fetch(url, {
+      method: method, cache: 'no-store',
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { d._status = r.status; return d; });
+    });
+  }
+
+  function setOnline(ok) { $('status').style.display = ok ? 'none' : 'block'; }
+
+  function localAnswer(qid) { var a = store.get('answers') || {}; return a[qid] || null; }
+  function saveLocalAnswer(qid, text) { var a = store.get('answers') || {}; a[qid] = text; store.set('answers', a); }
+
+  function render(data) {
+    if (data.step) current = data.step;
+    if (typeof data.registered === 'boolean') registered = data.registered;
+    if (!current) return;
+
+    if (!registered) {
+      if (lateBlocked) return show('late');
+      if (current.type === 'end') return show('end');
+      // Сервер нас не знает (например, перезапустился) — молча регистрируемся заново.
+      if (pid && profile) return reRegister();
+      return show('register');
+    }
+
+    if (current.type === 'question') {
+      var isNew = $('screen-question').dataset.qid !== current.qid;
+      $('screen-question').dataset.qid = current.qid;
+      $('q-block').textContent = current.blockTitle;
+      $('q-label').textContent = current.label;
+      if (isNew) { $('answer').value = ''; $('ans-error').textContent = ''; }
+      var mine = data.myAnswer || null;
+      // Ответ уходил, но сервер его не помнит (например, перезапустился) — отправим ещё раз.
+      var local = localAnswer(current.qid);
+      if (!mine && local && resent !== current.qid) { resent = current.qid; submitAnswer(local, true); }
+      showSent(mine);
+      show('question');
+      if (isNew) { try { $('answer').focus({ preventScroll: true }); } catch (e) {} }
+      return;
+    }
+    $('screen-question').dataset.qid = '';
+    if (current.type === 'end') return show('end');
+    if (current.type === 'lobby') {
+      $('wait-title').textContent = 'Ты в игре' + (store.get('name') ? ', ' + store.get('name') : '') + '!';
+      $('wait-text').textContent = 'Ждём начала. Экран переключится сам, ничего нажимать не нужно.';
+    } else {
+      $('wait-title').textContent = current.last ? 'Последний блок позади' : 'Небольшая пауза';
+      $('wait-text').textContent = 'Слушаем разбор. Следующий вопрос появится здесь сам.';
+    }
+    show('wait');
+  }
+
+  function showSent(text) {
+    var el = $('ans-sent');
+    if (text) { el.textContent = 'Ответ принят: ' + text; el.classList.remove('hidden'); }
+    else el.classList.add('hidden');
+  }
+
+  function refresh() {
+    return api('GET', '/api/state?pid=' + encodeURIComponent(pid || '')).then(function (d) {
+      setOnline(true); lastSeen = Date.now(); render(d);
+    }).catch(function () { setOnline(false); });
+  }
+
+  var reRegistering = false;
+  function reRegister() {
+    if (reRegistering) return;
+    reRegistering = true;
+    api('POST', '/api/register', Object.assign({ pid: pid, resume: true }, profile)).then(function (d) {
+      reRegistering = false;
+      if (d.pid) { pid = d.pid; store.set('pid', pid); render(d); }
+      else { profile = null; show('register'); }
+    }).catch(function () { reRegistering = false; setOnline(false); });
+  }
+
+  $('reg-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var body = { first: $('first').value.trim(), last: $('last').value.trim(), tg: $('tg').value.trim(), club: $('club').value };
+    if (!body.first || !body.last || !body.tg.replace(/@/g, '') || !body.club) {
+      $('reg-error').textContent = 'Заполни, пожалуйста, все поля'; return;
+    }
+    $('reg-btn').disabled = true; $('reg-error').textContent = '';
+    api('POST', '/api/register', body).then(function (d) {
+      $('reg-btn').disabled = false;
+      if (d.late) { lateBlocked = true; $('late-text').textContent = d.error; return show('late'); }
+      if (!d.pid) { $('reg-error').textContent = d.error || 'Не получилось, попробуй ещё раз'; return; }
+      pid = d.pid; profile = body;
+      store.set('pid', pid); store.set('profile', body); store.set('name', body.first);
+      render(d);
+    }).catch(function () { $('reg-btn').disabled = false; $('reg-error').textContent = 'Нет связи, попробуй ещё раз'; });
+  });
+
+  function submitAnswer(text, silent) {
+    if (!current || current.type !== 'question') return;
+    var qid = current.qid;
+    if (!silent) { $('ans-btn').disabled = true; $('ans-error').textContent = ''; }
+    saveLocalAnswer(qid, text);
+    return api('POST', '/api/answer', { pid: pid, qid: qid, text: text }).then(function (d) {
+      $('ans-btn').disabled = false;
+      if (d.ok) { $('answer').value = ''; return render(d); }
+      if (d.unknown) { registered = false; return refresh(); }
+      if (!silent) $('ans-error').textContent = d.error || 'Не получилось, попробуй ещё раз';
+      if (d.step) render(d);
+    }).catch(function () {
+      $('ans-btn').disabled = false;
+      if (!silent) $('ans-error').textContent = 'Нет связи. Нажми «Отправить» ещё раз';
+    });
+  }
+
+  $('ans-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = $('answer').value.trim();
+    if (!text) { $('ans-error').textContent = 'Напиши ответ'; return; }
+    submitAnswer(text, false);
+  });
+
+  // Живые обновления: SSE + страховочный опрос.
+  var es = null;
+  function connect() {
+    if (!window.EventSource) return;
+    try { es = new EventSource('/api/events'); } catch (e) { return; }
+    es.onmessage = function (ev) {
+      lastSeen = Date.now(); setOnline(true);
+      try {
+        var d = JSON.parse(ev.data);
+        if (!current || d.step.index !== current.index) refresh();
+      } catch (e) {}
+    };
+    es.onerror = function () { /* браузер переподключится сам; подстрахует опрос */ };
+  }
+
+  setInterval(function () {
+    var sseOk = es && es.readyState === 1;
+    if (!sseOk || Date.now() - lastSeen > 30000) refresh();
+  }, 4000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
+  window.addEventListener('online', refresh);
+
+  refresh();
+  connect();
+})();
+</script>
+</body>
+</html>

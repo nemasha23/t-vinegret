@@ -1,0 +1,14 @@
+{
+  "name": "t-vinegret",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Платформа приёма ответов для квиза Т-Винегрет",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/check.test.js && node test/load.test.js 100"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
